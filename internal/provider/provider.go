@@ -1,16 +1,17 @@
 package provider
 
 import (
-  "context"
-  "os"
+    "context"
+    "os"
 
-  "github.com/hashicorp-demoapp/hashicups-client-go"
-  "github.com/hashicorp/terraform-plugin-framework/datasource"
-  "github.com/hashicorp/terraform-plugin-framework/path"
-  "github.com/hashicorp/terraform-plugin-framework/provider"
-  "github.com/hashicorp/terraform-plugin-framework/provider/schema"
-  "github.com/hashicorp/terraform-plugin-framework/resource"
-  "github.com/hashicorp/terraform-plugin-framework/types"
+    "github.com/hashicorp-demoapp/hashicups-client-go"
+    "github.com/hashicorp/terraform-plugin-framework/datasource"
+    "github.com/hashicorp/terraform-plugin-framework/path"
+    "github.com/hashicorp/terraform-plugin-framework/provider"
+    "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+    "github.com/hashicorp/terraform-plugin-framework/resource"
+    "github.com/hashicorp/terraform-plugin-framework/types"
+    "github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -67,6 +68,7 @@ func (p *hashicupsProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 }
 
 func (p *hashicupsProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+    tflog.Info(ctx, "Configuring HashiCups client")
     // Retrieve provider data from configuration
     var config hashicupsProviderModel
     diags := req.Config.Get(ctx, &config)
@@ -165,6 +167,13 @@ func (p *hashicupsProvider) Configure(ctx context.Context, req provider.Configur
         return
     }
 
+    ctx = tflog.SetField(ctx, "hashicups_host", host)
+    ctx = tflog.SetField(ctx, "hashicups_username", username)
+    ctx = tflog.SetField(ctx, "hashicups_password", password)
+    ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "hashicups_password")
+
+    tflog.Debug(ctx, "Creating HashiCups client")
+
     // Create a new HashiCups client using the configuration values
     client, err := hashicups.NewClient(&host, &username, &password)
     if err != nil {
@@ -181,6 +190,8 @@ func (p *hashicupsProvider) Configure(ctx context.Context, req provider.Configur
     // type Configure methods.
     resp.DataSourceData = client
     resp.ResourceData = client
+
+    tflog.Info(ctx, "Configured HashiCups client", map[string]any{"success": true})
 }
 
 
